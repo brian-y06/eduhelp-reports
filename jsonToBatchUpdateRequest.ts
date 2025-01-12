@@ -15,8 +15,7 @@ import { docs_v1 } from "googleapis";
 import { GDocRequest, InlineObject, Paragraph } from "../types/googleDocsTypes";
 
 /**
- * !!NOTE!!
- * When making template BLUEPRINTS you do not include the font size 1 line at the end of the document. It will be automotically added when a new template is generated (it's the original line of the document that is turned into the font size 1 line)
+ * This is a code sample to show my coding style and provides a high level overview of how the Google Doc to Batch Request feature is created.
  */
 
 /**
@@ -25,7 +24,6 @@ import { GDocRequest, InlineObject, Paragraph } from "../types/googleDocsTypes";
  */
 function jsonToBatchUpdateRequest(docJSON: docs_v1.Schema$Document) {
   try {
-    // !! If you're document is created manually in the browser it will not have a sectionBreak at the end and your content should be the line below
     let content = docJSON.body!.content as docs_v1.Schema$StructuralElement[];
     const inlineObjects = docJSON.inlineObjects;
 
@@ -91,6 +89,7 @@ function jsonToBatchUpdateRequest(docJSON: docs_v1.Schema$Document) {
       changePageMarginsReq,
     ];
 
+    // Inserting a table automatically creates a newline above it, we must flag this to make sure we don't copy the parse the newline and copy it ourselves again. 
     let newLineStyleUpdatesForAfterTableInsertion = null;
     for (let i = 0; i < (content as []).length; i++) {
       const structuralElement = content[i];
@@ -120,16 +119,18 @@ function jsonToBatchUpdateRequest(docJSON: docs_v1.Schema$Document) {
 
           break;
         }
+          
         case "sectionBreak": {
-          const serctionBreakInsertionRequest = handleSectionBreak({
+          const sectionBreakInsertionRequest = handleSectionBreak({
             sectionBreakElement:
               structuralElement.sectionBreak as docs_v1.Schema$SectionBreak,
             sectionBreakStartIndex: startIndex,
             sectionBreakEndIndex: endIndex,
           });
-          requests.push(...serctionBreakInsertionRequest);
+          requests.push(...sectionBreakInsertionRequest);
           break;
         }
+          
         case "table": {
           const tableInsertionRequest = handleTable({
             tableElement: structuralElement.table as docs_v1.Schema$Table,
@@ -144,8 +145,6 @@ function jsonToBatchUpdateRequest(docJSON: docs_v1.Schema$Document) {
           }
           break;
         }
-        case "tableOfContents":
-          break;
       }
     }
 
@@ -162,7 +161,7 @@ function jsonToBatchUpdateRequest(docJSON: docs_v1.Schema$Document) {
 // SECTION BREAK STRUCTURAL ELEMENT HANDLING
 /**
  * A method to return the appropriate type of section break requests based on whether there is a start index in the structural element or not.
- * @param {sectionBreak} sectionBreakElement a section break object
+ * @param {docs_v1.Schema$SectionBreak} sectionBreakElement a section break object
  * @param {number} sectionBreakStartIndex the start index of the section break
  * @param {number} sectionBreakEndIndex the end index of the section break
  * @returns an array of requests objects to insert a section break and update its style
